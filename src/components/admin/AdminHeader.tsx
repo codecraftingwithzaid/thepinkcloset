@@ -14,14 +14,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useSidebar } from './SidebarContext';
 
 export function AdminHeader() {
   const { setTheme, theme } = useTheme();
+  const { toggle } = useSidebar();
 
   return (
     <header className="sticky top-0 z-40 flex h-16 w-full items-center justify-between border-b border-border/50 bg-background/80 backdrop-blur-xl px-4 md:px-6">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" className="md:hidden">
+        <Button variant="ghost" size="icon" className="md:hidden" onClick={toggle}>
           <Menu className="h-5 w-5" />
         </Button>
         <div className="hidden md:flex items-center relative max-w-md w-full">
