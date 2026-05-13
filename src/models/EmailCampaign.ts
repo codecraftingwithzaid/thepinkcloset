@@ -8,6 +8,8 @@ export interface IEmailCampaign extends Document {
   template: mongoose.Types.ObjectId;
   audience: any; // flexible audience definition (filter object / type)
   selectedRecipients?: mongoose.Types.ObjectId[];
+  html?: string;
+  text?: string;
   scheduleAt?: Date;
   status: CampaignStatus;
   totalRecipients: number;
@@ -27,6 +29,16 @@ const EmailCampaignSchema = new Schema<IEmailCampaign>(
     template: { type: Schema.Types.ObjectId, ref: 'EmailTemplate', required: false },
     audience: { type: Schema.Types.Mixed },
     selectedRecipients: [{ type: Schema.Types.ObjectId }],
+    html: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    text: {
+      type: String,
+      trim: true,
+      default: '',
+    },
     scheduleAt: { type: Date },
     status: { type: String, enum: ['draft', 'scheduled', 'sending', 'sent', 'paused', 'failed'], default: 'draft' },
     totalRecipients: { type: Number, default: 0 },

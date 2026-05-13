@@ -61,7 +61,7 @@ export function EmailCampaignsClient() {
             setLoading(true);
             const res = await getCampaigns();
             if (res.ok) {
-                setCampaigns(res.campaigns || []);
+                setCampaigns((res.campaigns || []) as Campaign[]);
             } else {
                 toast.error(res.error || 'Failed to load campaigns');
             }

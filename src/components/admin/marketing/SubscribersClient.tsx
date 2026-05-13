@@ -45,12 +45,12 @@ export function SubscribersClient() {
     ]);
 
     if (subRes.ok) {
-      setSubscribers(subRes.subscribers);
+      setSubscribers(subRes.subscribers as Subscriber[]);
     } else {
       toast.error(subRes.error || 'Failed to load subscribers');
     }
 
-    if (statsRes.ok) {
+    if (statsRes.ok && statsRes.stats) {
       setStats(statsRes.stats);
     }
     setLoading(false);

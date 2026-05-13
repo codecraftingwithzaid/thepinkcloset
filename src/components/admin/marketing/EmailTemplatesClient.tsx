@@ -48,7 +48,7 @@ export function EmailTemplatesClient() {
     setLoading(true);
     const res = await getEmailTemplates();
     if (res.ok) {
-      setTemplates(res.templates);
+      setTemplates(res.templates as Template[]);
     } else {
       toast.error(res.error || 'Failed to load templates');
     }

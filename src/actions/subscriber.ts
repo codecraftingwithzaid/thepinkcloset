@@ -76,7 +76,7 @@ export async function getSubscribers(status?: string) {
     const session = await requireAdmin();
 
     await connectToDatabase();
-    const query = status ? { status } : {};
+    const query = status ? { status: status as 'subscribed' | 'unsubscribed' | 'bounced' } : {};
     const subscribers = await Subscriber.find(query).sort({ createdAt: -1 }).lean();
 
     return { ok: true, subscribers };
