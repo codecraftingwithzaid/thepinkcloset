@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Search, Plus, Trash2, Download } from 'lucide-react';
 import { toast } from 'sonner';
-import { deleteNewsletter, subscribeNewsletter, unsubscribeNewsletter } from '@/actions/newsletter';
+import { deleteSubscriber, subscribeEmail, unsubscribeEmail } from '@/actions/subscriber';
 import { ConfirmationDialog } from '@/components/common/ConfirmationDialog';
 
 export function NewsletterClient({ subscribers: initialSubscribers, stats }: { subscribers: any[]; stats: any }) {
@@ -41,10 +41,10 @@ export function NewsletterClient({ subscribers: initialSubscribers, stats }: { s
             return;
         }
         const tags = String(formData.get('tags') || '').split(',').map((value) => value.trim()).filter(Boolean);
-        const res = await subscribeNewsletter(email, tags);
-        if (res?.success) {
+        const res = await subscribeEmail(email);
+        if (res?.ok) {
             toast.success('Subscriber added');
-            setSubscribers([res.data, ...subscribers]);
+            setSubscribers([res.subscriber, ...subscribers]);
             (e.target as HTMLFormElement).reset();
         } else {
             toast.error('Failed to add subscriber', { description: res?.error });
@@ -53,20 +53,30 @@ export function NewsletterClient({ subscribers: initialSubscribers, stats }: { s
     };
 
     const handleToggle = async (subscriber: any) => {
-        const res = subscriber.isActive ? await unsubscribeNewsletter(subscriber.email) : await subscribeNewsletter(subscriber.email, subscriber.tags || []);
-        if (res?.success) {
-            toast.success(subscriber.isActive ? 'Subscriber unsubscribed' : 'Subscriber reactivated');
-            setSubscribers(subscribers.map((item) => (item._id === subscriber._id ? res.data : item)));
+        if (subscriber.isActive) {
+            const res = await unsubscribeEmail(subscriber.email);
+            if (res?.ok) {
+                toast.success('Subscriber unsubscribed');
+                setSubscribers(subscribers.map((item) => (item._id === subscriber._id ? { ...item, isActive: false } : item)));
+            } else {
+                toast.error('Failed to unsubscribe', { description: res?.error });
+            }
         } else {
-            toast.error('Failed to update subscriber', { description: res?.error });
+            const res = await subscribeEmail(subscriber.email);
+            if (res?.ok) {
+                toast.success('Subscriber reactivated');
+                setSubscribers(subscribers.map((item) => (item._id === subscriber._id ? res.subscriber : item)));
+            } else {
+                toast.error('Failed to reactivate', { description: res?.error });
+            }
         }
     };
 
     const handleDelete = async () => {
         if (!confirmDelete.id) return;
         setIsDeleting(confirmDelete.id);
-        const res = await deleteNewsletter(confirmDelete.id);
-        if (res?.success) {
+        const res = await deleteSubscriber(confirmDelete.id as string);
+        if (res?.ok) {
             toast.success('Subscriber deleted');
             setSubscribers(subscribers.filter((item) => item._id !== confirmDelete.id));
         } else {
@@ -96,8 +106,8 @@ export function NewsletterClient({ subscribers: initialSubscribers, stats }: { s
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Card><CardHeader><CardTitle className="text-sm">Total</CardTitle></CardHeader><CardContent className="text-2xl font-bold">{stats?.total ?? 0}</CardContent></Card>
-                <Card><CardHeader><CardTitle className="text-sm">Active</CardTitle></CardHeader><CardContent className="text-2xl font-bold text-green-600">{stats?.active ?? 0}</CardContent></Card>
-                <Card><CardHeader><CardTitle className="text-sm">Inactive</CardTitle></CardHeader><CardContent className="text-2xl font-bold text-red-600">{stats?.inactive ?? 0}</CardContent></Card>
+                <Card><CardHeader><CardTitle className="text-sm">Active</CardTitle></CardHeader><CardContent className="text-2xl font-bold text-green-600">{stats?.subscribed ?? 0}</CardContent></Card>
+                <Card><CardHeader><CardTitle className="text-sm">Inactive</CardTitle></CardHeader><CardContent className="text-2xl font-bold text-red-600">{stats?.unsubscribed ?? 0}</CardContent></Card>
             </div>
 
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">

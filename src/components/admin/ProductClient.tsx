@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus, Edit, Trash2, Search, MoreHorizontal, Power } from 'lucide-react';
 import { toast } from 'sonner';
+import { startGlobalLoading, stopGlobalLoading } from '@/store/useLoadingStore';
 import { deleteProduct, updateProductStatus } from '@/actions/product';
 import { ConfirmationDialog } from '@/components/common/ConfirmationDialog';
 import {
@@ -70,40 +71,54 @@ export function ProductClient({ products: initialProducts }: { products: any[] }
     if (!confirmDialog.productId) return;
 
     setIsDeleting(confirmDialog.productId);
-    const res = await deleteProduct(confirmDialog.productId);
-    if (res?.success) {
-      toast.success('Product deleted successfully');
-      setProducts(products.filter(p => p._id !== confirmDialog.productId));
-      router.refresh();
-    } else {
-      toast.error('Failed to delete product', { description: res?.error });
+    try {
+      startGlobalLoading('Deleting product...')
+      const res = await deleteProduct(confirmDialog.productId);
+      if (res?.success) {
+        toast.success('Product deleted successfully');
+        setProducts(products.filter(p => p._id !== confirmDialog.productId));
+        // Await refresh before stopping loader to ensure page data is re-fetched
+        await router.refresh();
+      } else {
+        toast.error('Failed to delete product', { description: res?.error });
+      }
+    } finally {
+      setIsDeleting(null);
+      stopGlobalLoading()
     }
-    setIsDeleting(null);
   };
 
   const handleToggleStatus = async () => {
     if (!confirmDialog.productId || confirmDialog.productStatus === null) return;
 
     setIsTogglingStatus(confirmDialog.productId);
-    const newStatus = !confirmDialog.productStatus;
-    const res = await updateProductStatus(confirmDialog.productId, newStatus);
-    if (res?.success) {
-      // Update local state immediately
-      setProducts(products.map(p =>
-        p._id === confirmDialog.productId
-          ? { ...p, isActive: newStatus }
-          : p
-      ));
-      toast.success(`Product ${newStatus ? 'activated' : 'deactivated'} successfully`);
-      router.refresh();
-    } else {
-      toast.error('Failed to update product status', { description: res?.error });
+    try {
+      startGlobalLoading('Updating product status...')
+      const newStatus = !confirmDialog.productStatus;
+      const res = await updateProductStatus(confirmDialog.productId, newStatus);
+      if (res?.success) {
+        // Update local state immediately
+        setProducts(products.map(p =>
+          p._id === confirmDialog.productId
+            ? { ...p, isActive: newStatus }
+            : p
+        ));
+        toast.success(`Product ${newStatus ? 'activated' : 'deactivated'} successfully`);
+        // Await refresh before stopping loader to ensure page data is re-fetched
+        await router.refresh();
+      } else {
+        toast.error('Failed to update product status', { description: res?.error });
+      }
+    } finally {
+      setIsTogglingStatus(null);
+      stopGlobalLoading()
     }
-    setIsTogglingStatus(null);
   };
 
-  const handleEditClick = (productId: string) => {
-    router.push(`/admin/products/${productId}`);
+  const handleEditClick = async (productId: string) => {
+    startGlobalLoading()
+    await router.push(`/admin/products/${productId}`)
+    // Route change listener in RootLayoutClient will stop loader
   };
 
   return (
@@ -181,8 +196,8 @@ export function ProductClient({ products: initialProducts }: { products: any[] }
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
                           <span className={`px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wider ${product.stock > 10 ? 'bg-green-500/10 text-green-600' :
-                              product.stock > 0 ? 'bg-orange-500/10 text-orange-600' :
-                                'bg-red-500/10 text-red-600'
+                            product.stock > 0 ? 'bg-orange-500/10 text-orange-600' :
+                              'bg-red-500/10 text-red-600'
                             }`}>
                             {product.stock > 10 ? 'Active' : product.stock > 0 ? 'Low Stock' : 'Out of Stock'}
                           </span>

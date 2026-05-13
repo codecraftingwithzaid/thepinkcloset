@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { ArrowLeft, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { startGlobalLoading, stopGlobalLoading } from '@/store/useLoadingStore';
 
 export default function EditProductPage() {
     const router = useRouter();
@@ -31,7 +32,9 @@ export default function EditProductPage() {
 
                 if (!fetchedProduct) {
                     toast.error('Product not found');
-                    router.push('/admin/products');
+                    startGlobalLoading()
+                    await router.push('/admin/products');
+                    // Route change listener will stop loader
                     return;
                 }
 
@@ -39,7 +42,9 @@ export default function EditProductPage() {
                 setCategories(cats || []);
             } catch (error) {
                 toast.error('Failed to load product');
-                router.push('/admin/products');
+                startGlobalLoading()
+                await router.push('/admin/products');
+                // Route change listener will stop loader
             } finally {
                 setIsLoadingData(false);
             }
@@ -51,16 +56,19 @@ export default function EditProductPage() {
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setIsLoading(true);
+        startGlobalLoading('Updating product...')
 
         const formData = new FormData(e.currentTarget);
         const res = await updateProductFromFormData(productId, formData);
 
         if (res?.success) {
             toast.success('Product updated successfully');
-            router.push('/admin/products');
+            await router.push('/admin/products');
+            // Route change listener will stop loader
         } else {
             toast.error('Failed to update product', { description: res?.error });
             setIsLoading(false);
+            stopGlobalLoading()
         }
     };
 
@@ -228,8 +236,8 @@ export default function EditProductPage() {
                             <div className="flex items-center justify-between">
                                 <span className="text-sm font-medium">Status</span>
                                 <span className={`text-sm px-2.5 py-1 rounded-full font-semibold ${product.isActive !== false
-                                        ? 'text-green-600 bg-green-500/10'
-                                        : 'text-gray-600 bg-gray-500/10'
+                                    ? 'text-green-600 bg-green-500/10'
+                                    : 'text-gray-600 bg-gray-500/10'
                                     }`}>
                                     {product.isActive !== false ? 'Active' : 'Inactive'}
                                 </span>

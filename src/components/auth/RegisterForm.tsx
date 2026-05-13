@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { registerUser } from '@/actions/auth';
 import { toast } from 'sonner';
+import { startGlobalLoading, stopGlobalLoading } from '@/store/useLoadingStore';
 import { AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 
@@ -18,6 +19,7 @@ export function RegisterForm() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
+    startGlobalLoading('Creating account...')
     setError('');
 
     const formData = new FormData(e.currentTarget);
@@ -27,9 +29,11 @@ export function RegisterForm() {
       setError(res.error || 'Failed to create account.');
       toast.error('Registration failed', { description: res.error });
       setIsLoading(false);
+      stopGlobalLoading()
     } else {
       toast.success('Account created!', { description: 'Please log in with your new credentials.' });
-      router.push('/login');
+      await router.push('/login');
+      // Route change listener in RootLayoutClient will stop loader
     }
   };
 

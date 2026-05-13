@@ -1,34 +1,74 @@
 'use client';
 
-import React from 'react';
+import { useEffect, useState } from 'react';
 import { 
   Send, Users, MailOpen, MousePointerClick, 
-  TrendingUp, ArrowUpRight, ArrowDownRight,
-  DollarSign
+  TrendingUp, ArrowUpRight, ArrowDownRight
 } from 'lucide-react';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
   BarChart, Bar
 } from 'recharts';
+import { PageLoader } from '@/components/loaders/PageLoader';
+import { getMarketingDashboard } from '@/actions/analytics';
+import { toast } from 'sonner';
 
-const performanceData = [
-  { name: 'Mon', sent: 4000, opened: 2400, clicked: 1000 },
-  { name: 'Tue', sent: 3000, opened: 1398, clicked: 800 },
-  { name: 'Wed', sent: 2000, opened: 9800, clicked: 2000 },
-  { name: 'Thu', sent: 2780, opened: 3908, clicked: 1500 },
-  { name: 'Fri', sent: 1890, opened: 4800, clicked: 2100 },
-  { name: 'Sat', sent: 2390, opened: 3800, clicked: 1200 },
-  { name: 'Sun', sent: 3490, opened: 4300, clicked: 1800 },
-];
-
-const revenueData = [
-  { name: 'Week 1', revenue: 4000 },
-  { name: 'Week 2', revenue: 3000 },
-  { name: 'Week 3', revenue: 2000 },
-  { name: 'Week 4', revenue: 2780 },
-];
+interface DashboardData {
+  campaigns: {
+    total: number;
+    sent: number;
+    scheduled: number;
+    recent: any[];
+  };
+  emails: {
+    total: number;
+    sent: number;
+    failed: number;
+    opened: number;
+    clicked: number;
+  };
+  subscribers: {
+    total: number;
+    active: number;
+  };
+  analytics: {
+    openRate: number;
+    clickRate: number;
+    failureRate: number;
+    deliveryRate: string;
+  };
+  recentActivity: any[];
+}
 
 export function MarketingDashboardClient() {
+  const [loading, setLoading] = useState(true);
+  const [dashboard, setDashboard] = useState<DashboardData | null>(null);
+
+  useEffect(() => {
+    loadDashboard();
+  }, []);
+
+  const loadDashboard = async () => {
+    setLoading(true);
+    const res = await getMarketingDashboard();
+    if (res.ok && res.dashboard) {
+      setDashboard(res.dashboard);
+    } else {
+      toast.error(res.error || 'Failed to load dashboard');
+    }
+    setLoading(false);
+  };
+
+  if (loading) return <PageLoader />;
+
+  const d = dashboard!;
+  const performanceData = [
+    { name: 'Sent', value: d.emails.sent },
+    { name: 'Opened', value: d.emails.opened },
+    { name: 'Clicked', value: d.emails.clicked },
+    { name: 'Failed', value: d.emails.failed },
+  ];
+
   return (
     <div className="space-y-6">
       <div>
@@ -41,136 +81,124 @@ export function MarketingDashboardClient() {
       {/* KPI Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <KPICard 
-          title="Total Sent" 
-          value="24,593" 
-          change="+12.5%" 
+          title="Total Emails Sent" 
+          value={d.emails.sent.toLocaleString()} 
+          change={d.emails.sent > 0 ? '+' : ''} 
           isPositive={true} 
           icon={Send} 
         />
         <KPICard 
-          title="Avg. Open Rate" 
-          value="48.2%" 
-          change="+4.1%" 
-          isPositive={true} 
+          title="Open Rate" 
+          value={`${d.analytics.openRate.toFixed(1)}%`} 
+          change={d.analytics.openRate > 30 ? '+' : ''} 
+          isPositive={d.analytics.openRate > 30} 
           icon={MailOpen} 
         />
         <KPICard 
-          title="Avg. Click Rate" 
-          value="12.4%" 
-          change="-1.2%" 
-          isPositive={false} 
+          title="Click Rate" 
+          value={`${d.analytics.clickRate.toFixed(1)}%`} 
+          change={d.analytics.clickRate > 10 ? '+' : ''} 
+          isPositive={d.analytics.clickRate > 10} 
           icon={MousePointerClick} 
         />
         <KPICard 
-          title="Campaign Revenue" 
-          value="$12,450" 
-          change="+18.2%" 
+          title="Active Subscribers" 
+          value={d.subscribers.active.toLocaleString()} 
+          change={`${((d.subscribers.active / d.subscribers.total) * 100).toFixed(0)}%`} 
           isPositive={true} 
-          icon={DollarSign} 
+          icon={Users} 
         />
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-        {/* Main Chart */}
+        {/* Performance Chart */}
         <div className="lg:col-span-4 rounded-xl border bg-card p-6 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="text-lg font-semibold font-heading tracking-tight">Campaign Performance</h2>
-              <p className="text-sm text-muted-foreground">Sent vs Opened vs Clicked this week</p>
+              <h2 className="text-lg font-semibold font-heading tracking-tight">Email Performance</h2>
+              <p className="text-sm text-muted-foreground">Sent, Opened, Clicked, Failed</p>
             </div>
           </div>
           <div className="h-[350px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={performanceData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="colorSent" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
-                  </linearGradient>
-                  <linearGradient id="colorOpened" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
+              <BarChart data={performanceData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
                 <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `${value}`} />
+                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
                 <RechartsTooltip 
                   contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '8px' }}
                   itemStyle={{ color: 'hsl(var(--foreground))' }}
                 />
-                <Area type="monotone" dataKey="sent" stroke="hsl(var(--primary))" fillOpacity={1} fill="url(#colorSent)" />
-                <Area type="monotone" dataKey="opened" stroke="#10b981" fillOpacity={1} fill="url(#colorOpened)" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Secondary Chart */}
-        <div className="lg:col-span-3 rounded-xl border bg-card p-6 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-lg font-semibold font-heading tracking-tight">Revenue Impact</h2>
-              <p className="text-sm text-muted-foreground">Revenue generated from campaigns</p>
-            </div>
-            <TrendingUp className="w-4 h-4 text-muted-foreground" />
-          </div>
-          <div className="h-[350px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={revenueData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
-                <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `$${value}`} />
-                <RechartsTooltip 
-                  cursor={{fill: 'hsl(var(--muted))'}}
-                  contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '8px' }}
-                />
-                <Bar dataKey="revenue" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="value" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
+
+        {/* Quick Stats */}
+        <div className="lg:col-span-3 rounded-xl border bg-card p-6 shadow-sm space-y-4">
+          <div>
+            <h2 className="text-lg font-semibold font-heading tracking-tight mb-4">Campaign Stats</h2>
+          </div>
+          <div className="space-y-3">
+            <div className="flex justify-between items-center pb-3 border-b border-border/50">
+              <span className="text-sm text-muted-foreground">Total Campaigns</span>
+              <span className="font-semibold text-lg">{d.campaigns.total}</span>
+            </div>
+            <div className="flex justify-between items-center pb-3 border-b border-border/50">
+              <span className="text-sm text-muted-foreground">Sent</span>
+              <span className="font-semibold text-lg text-green-600">{d.campaigns.sent}</span>
+            </div>
+            <div className="flex justify-between items-center pb-3 border-b border-border/50">
+              <span className="text-sm text-muted-foreground">Scheduled</span>
+              <span className="font-semibold text-lg text-blue-600">{d.campaigns.scheduled}</span>
+            </div>
+            <div className="flex justify-between items-center pb-3">
+              <span className="text-sm text-muted-foreground">Failed Emails</span>
+              <span className="font-semibold text-lg text-red-600">{d.emails.failed}</span>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Recent Campaigns Table Placeholder */}
+      {/* Recent Activity */}
       <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
         <div className="p-6 border-b border-border/50">
-          <h2 className="text-lg font-semibold font-heading tracking-tight">Recent Campaigns</h2>
+          <h2 className="text-lg font-semibold font-heading tracking-tight">Recent Email Activity</h2>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
             <thead className="text-xs text-muted-foreground uppercase bg-muted/50">
               <tr>
-                <th className="px-6 py-3 font-medium">Campaign Name</th>
+                <th className="px-6 py-3 font-medium">Recipient</th>
                 <th className="px-6 py-3 font-medium">Status</th>
-                <th className="px-6 py-3 font-medium">Sent</th>
-                <th className="px-6 py-3 font-medium">Open Rate</th>
-                <th className="px-6 py-3 font-medium">Click Rate</th>
+                <th className="px-6 py-3 font-medium">Sent At</th>
               </tr>
             </thead>
             <tbody>
-              {[
-                { name: 'Summer Sale Announcement', status: 'Completed', sent: '12,450', open: '48.2%', click: '14.1%' },
-                { name: 'New Arrivals: Floral Collection', status: 'Completed', sent: '8,200', open: '52.4%', click: '16.8%' },
-                { name: 'VIP Exclusive Discount', status: 'Draft', sent: '-', open: '-', click: '-' },
-                { name: 'Abandoned Cart Reminder', status: 'Active', sent: '1,450', open: '64.5%', click: '28.2%' },
-              ].map((campaign, i) => (
-                <tr key={i} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
-                  <td className="px-6 py-4 font-medium text-foreground">{campaign.name}</td>
-                  <td className="px-6 py-4">
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-                      campaign.status === 'Completed' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
-                      campaign.status === 'Active' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' :
-                      'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300'
-                    }`}>
-                      {campaign.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-muted-foreground">{campaign.sent}</td>
-                  <td className="px-6 py-4 text-muted-foreground">{campaign.open}</td>
-                  <td className="px-6 py-4 text-muted-foreground">{campaign.click}</td>
+              {d.recentActivity && d.recentActivity.length > 0 ? (
+                d.recentActivity.slice(0, 5).map((activity, i) => (
+                  <tr key={i} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
+                    <td className="px-6 py-4 font-medium text-foreground">{activity.recipientEmail}</td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
+                        activity.status === 'sent' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
+                        activity.status === 'failed' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' :
+                        'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+                      }`}>
+                        {activity.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-muted-foreground">
+                      {new Date(activity.createdAt).toLocaleDateString()}
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={3} className="px-6 py-4 text-center text-muted-foreground">No activity yet</td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>
@@ -197,10 +225,6 @@ function KPICard({ title, value, change, isPositive, icon: Icon }: { title: stri
         ) : (
           <ArrowDownRight className="w-4 h-4 text-red-500 mr-1" />
         )}
-        <span className={isPositive ? 'text-emerald-500 font-medium' : 'text-red-500 font-medium'}>
-          {change}
-        </span>
-        <span className="text-muted-foreground ml-2">vs last month</span>
       </div>
     </div>
   );

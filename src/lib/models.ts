@@ -25,6 +25,11 @@ import '@/models/Review';
 import '@/models/User';
 import '@/models/Product';   // refs Category
 import '@/models/Order';     // refs User, Product
+import '@/models/EmailTemplate';
+import '@/models/EmailCampaign';
+import '@/models/Subscriber';
+import '@/models/EmailLog';
+import '@/models/Newsletter';
 
 // Re-export default models for convenience
 export { default as Category } from '@/models/Category';
@@ -38,3 +43,8 @@ export { default as Review } from '@/models/Review';
 export { default as User } from '@/models/User';
 export { default as Product } from '@/models/Product';
 export { default as Order } from '@/models/Order';
+export { default as EmailTemplate } from '@/models/EmailTemplate';
+export { default as EmailCampaign } from '@/models/EmailCampaign';
+export { default as Subscriber } from '@/models/Subscriber';
+export { default as EmailLog } from '@/models/EmailLog';
+export { default as Newsletter } from '@/models/Newsletter';

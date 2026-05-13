@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus, Trash2, Search, MoreHorizontal, Mail, Phone } from 'lucide-react';
 import { toast } from 'sonner';
 import { deleteCustomer, updateCustomerStatus } from '@/actions/customer';
+import { startGlobalLoading, stopGlobalLoading } from '@/store/useLoadingStore';
 import { ConfirmationDialog } from '@/components/common/ConfirmationDialog';
 import {
     DropdownMenu,
@@ -50,20 +51,24 @@ export function CustomerListClient({ customers: initialCustomers, pagination }: 
         newStatus: null,
     });
 
-    const handleSearch = (value: string) => {
+    const handleSearch = async (value: string) => {
         setSearchTerm(value);
         const params = new URLSearchParams();
         params.set('search', value);
         if (statusFilter) params.set('status', statusFilter);
-        router.push(`/admin/customers?${params.toString()}`);
+        startGlobalLoading('Searching...')
+        await router.push(`/admin/customers?${params.toString()}`);
+        // Route change listener in RootLayoutClient will stop loader
     };
 
-    const handleStatusFilter = (value: string) => {
+    const handleStatusFilter = async (value: string) => {
         setStatusFilter(value);
         const params = new URLSearchParams();
         if (searchTerm) params.set('search', searchTerm);
         if (value) params.set('status', value);
-        router.push(`/admin/customers?${params.toString()}`);
+        startGlobalLoading('Filtering...')
+        await router.push(`/admin/customers?${params.toString()}`);
+        // Route change listener in RootLayoutClient will stop loader
     };
 
     const openDeleteConfirm = (id: string, name: string) => {
@@ -266,7 +271,7 @@ export function CustomerListClient({ customers: initialCustomers, pagination }: 
                                                             <DropdownMenuSeparator />
                                                             <DropdownMenuItem
                                                                 className="cursor-pointer"
-                                                                onClick={() => router.push(`/admin/customers/${customer._id}`)}
+                                                                onClick={async () => { startGlobalLoading(); await router.push(`/admin/customers/${customer._id}`); }}
                                                             >
                                                                 View Details
                                                             </DropdownMenuItem>
@@ -322,12 +327,14 @@ export function CustomerListClient({ customers: initialCustomers, pagination }: 
                                     key={page}
                                     variant={pagination.page === page ? 'default' : 'outline'}
                                     size="sm"
-                                    onClick={() => {
+                                    onClick={async () => {
                                         const params = new URLSearchParams();
                                         params.set('page', page.toString());
                                         if (searchTerm) params.set('search', searchTerm);
                                         if (statusFilter) params.set('status', statusFilter);
-                                        router.push(`/admin/customers?${params.toString()}`);
+                                        startGlobalLoading();
+                                        await router.push(`/admin/customers?${params.toString()}`);
+                                        // Route change listener in RootLayoutClient will stop loader
                                     }}
                                 >
                                     {page}

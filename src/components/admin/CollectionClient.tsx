@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Search, Plus, Trash2, Edit, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import { createCollection, deleteCollection, updateCollection } from '@/actions/collection';
+import { startGlobalLoading, stopGlobalLoading } from '@/store/useLoadingStore';
 import { ConfirmationDialog } from '@/components/common/ConfirmationDialog';
 
 export function CollectionClient({ collections: initialCollections }: { collections: any[] }) {
@@ -41,6 +42,7 @@ export function CollectionClient({ collections: initialCollections }: { collecti
   const handleCreate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsCreating(true);
+    startGlobalLoading('Creating collection...')
     const formData = new FormData(e.currentTarget);
     const res = await createCollection(formData);
     if (res?.success) {
@@ -51,6 +53,7 @@ export function CollectionClient({ collections: initialCollections }: { collecti
       toast.error('Failed to create collection', { description: res?.error });
     }
     setIsCreating(false);
+    stopGlobalLoading()
   };
 
   const openEditDialog = (collection: any) => {
@@ -61,6 +64,7 @@ export function CollectionClient({ collections: initialCollections }: { collecti
   const handleUpdate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!editingCollection?._id) return;
+    startGlobalLoading('Updating collection...')
     const formData = new FormData(e.currentTarget);
     const res = await updateCollection(editingCollection._id, formData);
     if (res?.success) {
@@ -71,11 +75,13 @@ export function CollectionClient({ collections: initialCollections }: { collecti
     } else {
       toast.error('Failed to update collection', { description: res?.error });
     }
+    stopGlobalLoading()
   };
 
   const handleDelete = async () => {
     if (!confirmDelete.id) return;
     setIsDeleting(confirmDelete.id);
+    startGlobalLoading('Deleting collection...')
     const res = await deleteCollection(confirmDelete.id);
     if (res?.success) {
       toast.success('Collection deleted');
@@ -84,6 +90,7 @@ export function CollectionClient({ collections: initialCollections }: { collecti
       toast.error('Failed to delete collection', { description: res?.error });
     }
     setIsDeleting(null);
+    stopGlobalLoading()
   };
 
   return (
@@ -192,7 +199,7 @@ export function CollectionClient({ collections: initialCollections }: { collecti
                         <td className="px-6 py-4">{collection.sortOrder ?? 0}</td>
                         <td className="px-6 py-4 text-right">
                           <div className="inline-flex items-center gap-2">
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={() => router.push(`/admin/collections/${collection._id}`)}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={async () => { startGlobalLoading(); await router.push(`/admin/collections/${collection._id}`); }}>
                               <Eye className="h-4 w-4" />
                             </Button>
                             <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={() => openEditDialog(collection)}>

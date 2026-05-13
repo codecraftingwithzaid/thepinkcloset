@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { Trash2, Copy, Edit2, Plus, Search, LayoutTemplate } from 'lucide-react';
+import { Trash2, Copy, Edit2, Plus } from 'lucide-react';
 import { PageLoader } from '@/components/loaders/PageLoader';
 import {
   getEmailTemplates,
@@ -27,10 +27,9 @@ interface Template {
   createdAt: string;
 }
 
-export function EmailTemplatesClient() {
+export default function EmailTemplateClient() {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -54,11 +53,6 @@ export function EmailTemplatesClient() {
     }
     setLoading(false);
   };
-
-  const filteredTemplates = templates.filter(t =>
-    t.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    t.subject.toLowerCase().includes(searchTerm.toLowerCase())
-  );
 
   const handleSave = async () => {
     if (!formData.name.trim() || !formData.subject.trim() || !formData.html.trim()) {
@@ -133,27 +127,33 @@ export function EmailTemplatesClient() {
     }
   };
 
+  const handleOpenModal = (template?: Template) => {
+    if (template) {
+      handleEdit(template);
+    } else {
+      setFormData({ name: '', subject: '', html: '', text: '' });
+      setEditingId(null);
+      setIsModalOpen(true);
+    }
+  };
+
   if (loading) return <PageLoader />;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div className="space-y-6 p-6">
+      <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Email Templates</h1>
-          <p className="text-muted-foreground mt-2">
-            Design and manage reusable templates for your campaigns and automated flows.
-          </p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Email Templates</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">Manage email templates for campaigns</p>
         </div>
         <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-          <DialogTrigger
-            onClick={() => {
-              setFormData({ name: '', subject: '', html: '', text: '' });
-              setEditingId(null);
-            }}
-            className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
-          >
-            <Plus className="w-4 h-4" />
-            Create Template
+          <DialogTrigger asChild>
+            <Button
+              onClick={() => handleOpenModal()}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              <Plus className="mr-2 h-4 w-4" /> New Template
+            </Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
@@ -161,7 +161,7 @@ export function EmailTemplatesClient() {
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-2">
+                <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
                   Template Name
                 </label>
                 <Input
@@ -171,7 +171,7 @@ export function EmailTemplatesClient() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2">
+                <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
                   Subject Line
                 </label>
                 <Input
@@ -181,7 +181,7 @@ export function EmailTemplatesClient() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2">
+                <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
                   HTML Content
                 </label>
                 <textarea
@@ -189,11 +189,11 @@ export function EmailTemplatesClient() {
                   rows={10}
                   value={formData.html}
                   onChange={(e) => setFormData({ ...formData, html: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-background text-sm font-mono"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm font-mono"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2">
+                <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
                   Plain Text (Optional)
                 </label>
                 <textarea
@@ -201,7 +201,7 @@ export function EmailTemplatesClient() {
                   rows={6}
                   value={formData.text}
                   onChange={(e) => setFormData({ ...formData, text: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-background text-sm font-mono"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm font-mono"
                 />
               </div>
               <div className="flex justify-end gap-3 pt-4">
@@ -214,7 +214,7 @@ export function EmailTemplatesClient() {
                 >
                   Cancel
                 </Button>
-                <Button onClick={handleSave}>
+                <Button onClick={handleSave} className="bg-blue-600 hover:bg-blue-700 text-white">
                   {editingId ? 'Update' : 'Create'}
                 </Button>
               </div>
@@ -223,52 +223,38 @@ export function EmailTemplatesClient() {
         </Dialog>
       </div>
 
-      <div className="flex items-center space-x-2 bg-card border rounded-lg px-3 py-2 max-w-md shadow-sm">
-        <Search className="w-4 h-4 text-muted-foreground" />
-        <Input
-          placeholder="Search templates..."
-          className="border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 p-0 h-auto"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {filteredTemplates.map((template) => (
-          <div key={template._id} className="rounded-xl border bg-card overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 group">
-            <div className="h-32 bg-muted/30 relative border-b flex items-center justify-center p-4">
-              <div className="text-center text-muted-foreground">
-                <LayoutTemplate className="w-8 h-8 opacity-50 mx-auto mb-2" />
-                <span className="text-xs font-medium">Template</span>
-              </div>
-            </div>
-
-            <div className="p-5">
-              <div className="mb-2">
-                <h3 className="font-semibold tracking-tight text-lg leading-tight line-clamp-1" title={template.name}>
-                  {template.name}
-                </h3>
-              </div>
-
-              <div className="space-y-2 text-sm text-muted-foreground mb-4">
-                <p className="line-clamp-1" title={template.subject}>
-                  {template.subject}
-                </p>
-                <div className="flex items-center justify-between pt-2 mt-2 border-t border-border/50">
-                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-wider ${template.status === 'active' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
-                      'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400'
-                    }`}>
-                    {template.status}
-                  </span>
+      {templates.length === 0 ? (
+        <div className="text-center py-12">
+          <p className="text-gray-500 dark:text-gray-400">No email templates yet. Create your first one!</p>
+        </div>
+      ) : (
+        <div className="grid gap-4">
+          {templates.map((template) => (
+            <div
+              key={template._id}
+              className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow"
+            >
+              <div className="flex justify-between items-start mb-3">
+                <div className="flex-1">
+                  <h3 className="font-semibold text-gray-900 dark:text-white">{template.name}</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{template.subject}</p>
                 </div>
+                <span
+                  className={`text-xs px-2 py-1 rounded ${
+                    template.status === 'active'
+                      ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                      : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                  }`}
+                >
+                  {template.status}
+                </span>
               </div>
-
-              <div className="flex flex-wrap gap-2">
+              <div className="flex gap-2">
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={() => handleEdit(template)}
-                  className="flex items-center gap-1 text-xs"
+                  className="flex items-center gap-1"
                 >
                   <Edit2 className="h-3 w-3" /> Edit
                 </Button>
@@ -276,15 +262,14 @@ export function EmailTemplatesClient() {
                   size="sm"
                   variant="outline"
                   onClick={() => handleDuplicate(template._id)}
-                  className="flex items-center gap-1 text-xs"
+                  className="flex items-center gap-1"
                 >
-                  <Copy className="h-3 w-3" /> Copy
+                  <Copy className="h-3 w-3" /> Duplicate
                 </Button>
                 <Button
                   size="sm"
                   variant={template.status === 'active' ? 'outline' : 'default'}
                   onClick={() => handleToggleStatus(template._id)}
-                  className="text-xs"
                 >
                   {template.status === 'active' ? 'Deactivate' : 'Activate'}
                 </Button>
@@ -292,25 +277,15 @@ export function EmailTemplatesClient() {
                   size="sm"
                   variant="destructive"
                   onClick={() => handleDelete(template._id)}
-                  className="flex items-center gap-1 text-xs"
+                  className="flex items-center gap-1"
                 >
-                  <Trash2 className="h-3 w-3" />
+                  <Trash2 className="h-3 w-3" /> Delete
                 </Button>
               </div>
             </div>
-          </div>
-        ))}
-
-        {filteredTemplates.length === 0 && (
-          <div className="col-span-full py-12 text-center border-2 border-dashed rounded-xl bg-muted/10">
-            <LayoutTemplate className="w-12 h-12 text-muted-foreground/50 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-foreground mb-1">No templates found</h3>
-            <p className="text-muted-foreground text-sm max-w-sm mx-auto">
-              {searchTerm ? 'No templates match your search. Try adjusting your filters.' : 'No templates yet. Create your first one!'}
-            </p>
-          </div>
-        )}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
