@@ -5,13 +5,18 @@ import Category from '@/models/Category';
 import { revalidatePath } from 'next/cache';
 
 export async function getCategories() {
-  await connectToDatabase();
+  try {
+    await connectToDatabase();
 
-  const categories = await Category.find({})
-    .sort({ name: 1 })
-    .lean();
+    const categories = await Category.find({})
+      .sort({ name: 1 })
+      .lean();
 
-  return JSON.parse(JSON.stringify(categories));
+    return JSON.parse(JSON.stringify(categories));
+  } catch (error) {
+    console.error('Get Categories Error:', error);
+    return [];
+  }
 }
 
 export async function createCategory(data: {

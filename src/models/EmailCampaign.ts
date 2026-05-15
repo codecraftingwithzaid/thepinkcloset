@@ -2,11 +2,16 @@ import mongoose, { Document, Model, Schema } from 'mongoose';
 
 export type CampaignStatus = 'draft' | 'scheduled' | 'sending' | 'sent' | 'paused' | 'failed';
 
+export interface CampaignAudience {
+  type: 'all_subscribers' | 'all_customers' | 'selected';
+  emails?: { email: string; id?: string }[];
+}
+
 export interface IEmailCampaign extends Document {
   name: string;
   subject: string;
   template: mongoose.Types.ObjectId;
-  audience: any; // flexible audience definition (filter object / type)
+  audience: Partial<CampaignAudience> | Record<string, unknown>;
   selectedRecipients?: mongoose.Types.ObjectId[];
   html?: string;
   text?: string;

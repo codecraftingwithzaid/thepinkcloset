@@ -5,8 +5,11 @@ export interface ICollection extends Document {
   slug: string;
   description?: string;
   image?: string;
+  imagePath?: string; // Supabase storage path
   featuredImage?: string;
+  featuredImagePath?: string; // Supabase storage path
   bannerImage?: string;
+  bannerImagePath?: string; // Supabase storage path
   seoTitle?: string;
   seoDescription?: string;
   isActive: boolean;
@@ -23,8 +26,11 @@ const CollectionSchema: Schema = new Schema(
     slug: { type: String, required: true, unique: true },
     description: { type: String },
     image: { type: String },
+    imagePath: { type: String }, // Supabase storage path
     featuredImage: { type: String },
+    featuredImagePath: { type: String }, // Supabase storage path
     bannerImage: { type: String },
+    bannerImagePath: { type: String }, // Supabase storage path
     seoTitle: { type: String },
     seoDescription: { type: String },
     isActive: { type: Boolean, default: true },

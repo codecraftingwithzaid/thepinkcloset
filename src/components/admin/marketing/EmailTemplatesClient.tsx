@@ -256,7 +256,7 @@ export function EmailTemplatesClient() {
                 </p>
                 <div className="flex items-center justify-between pt-2 mt-2 border-t border-border/50">
                   <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-wider ${template.status === 'active' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
-                      'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400'
+                    'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400'
                     }`}>
                     {template.status}
                   </span>

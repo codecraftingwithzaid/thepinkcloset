@@ -1,59 +1,96 @@
 import React from 'react';
-import { HeroBanner } from '@/components/storefront/HeroBanner';
-import { FeaturedProducts } from '@/components/storefront/FeaturedProducts';
+import {
+  HeroSection,
+  FeaturedCollectionsSection,
+  TestimonialsSection,
+  InstagramGallerySection,
+  TrustBadgesSection,
+} from '@/components/premium';
+import { FeaturedProductsSection, TextBannerSection } from '@/components/premium/sections/ProductShowcase';
+import { getBanners } from '@/actions/banner';
+import { getCollections } from '@/actions/collection';
+import { getProducts } from '@/actions/product';
 
-export default function StorefrontHomePage() {
+type ProductRecord = {
+  _id: string;
+  title: string;
+  slug: string;
+  images?: string[];
+  isActive?: boolean;
+  price: number;
+  salePrice?: number;
+  ratings?: number;
+  reviewsCount?: number;
+  stock?: number;
+  tags?: string[];
+  isFeatured?: boolean;
+};
+
+type BannerRecord = {
+  title?: string;
+  subtitle?: string;
+  image?: string;
+  mobileImage?: string;
+  link?: string;
+  location?: string;
+  ctaText?: string;
+  ctaLink?: string;
+  isActive?: boolean;
+};
+
+type CollectionRecord = {
+  _id: string;
+  title: string;
+  slug: string;
+  image?: string;
+  featuredImage?: string;
+  bannerImage?: string;
+  isActive?: boolean;
+  products?: string[];
+};
+
+export default async function StorefrontHomePage() {
+  const [bannerResult, collectionResult, products] = await Promise.all([
+    getBanners(),
+    getCollections(),
+    getProducts(),
+  ]);
+
+  const productList = products as ProductRecord[];
+  const banners = bannerResult.success ? (bannerResult.data as BannerRecord[]).filter((banner) => banner.isActive) : [];
+  const heroBanner = banners.find((banner) => banner.location === 'hero') ?? banners[0];
+  const promoBanner = banners.find((banner) => banner.location === 'promo' || banner.location === 'announcement');
+  const collections = collectionResult.success
+    ? (collectionResult.data as CollectionRecord[])
+        .filter((collection) => collection.isActive)
+        .slice(0, 4)
+        .map((collection) => ({
+          id: collection._id,
+          name: collection.title,
+          image: collection.featuredImage || collection.image || collection.bannerImage || productList.find((product) => product.images?.[0])?.images?.[0],
+          productCount: collection.products?.length ?? 0,
+          href: `/shop?collection=${collection.slug}`,
+        }))
+    : [];
+
   return (
     <div className="flex flex-col min-h-screen">
-      <HeroBanner />
-      <FeaturedProducts />
-      
-      {/* Category Showcase Section */}
-      <section className="py-16 bg-muted/30">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Category Cards */}
-            <div className="relative aspect-square overflow-hidden rounded-2xl group cursor-pointer">
-              <img src="https://images.unsplash.com/photo-1515347619362-793574d6e90d?q=80&w=1000&auto=format&fit=crop" alt="Dresses" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-              <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition-colors duration-300" />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="bg-background/90 backdrop-blur-sm px-8 py-3 rounded-full shadow-lg transform transition-transform group-hover:scale-110">
-                  <h3 className="font-heading font-bold text-xl">Dresses</h3>
-                </div>
-              </div>
-            </div>
-            <div className="relative aspect-square overflow-hidden rounded-2xl group cursor-pointer">
-              <img src="https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?q=80&w=1000&auto=format&fit=crop" alt="Tops" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-              <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition-colors duration-300" />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="bg-background/90 backdrop-blur-sm px-8 py-3 rounded-full shadow-lg transform transition-transform group-hover:scale-110">
-                  <h3 className="font-heading font-bold text-xl">Tops</h3>
-                </div>
-              </div>
-            </div>
-            <div className="relative aspect-square overflow-hidden rounded-2xl group cursor-pointer">
-              <img src="https://images.unsplash.com/photo-1584273143981-41c073dfe8f8?q=80&w=1000&auto=format&fit=crop" alt="Accessories" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-              <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition-colors duration-300" />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="bg-background/90 backdrop-blur-sm px-8 py-3 rounded-full shadow-lg transform transition-transform group-hover:scale-110">
-                  <h3 className="font-heading font-bold text-xl">Accessories</h3>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      <main className="flex-1">
+        <HeroSection banner={heroBanner} fallbackProduct={productList.find((product) => product.images?.[0])} />
+        <FeaturedCollectionsSection collections={collections} />
+        <TrustBadgesSection />
+        <FeaturedProductsSection products={productList.filter((product) => product.isActive).slice(0, 12)} />
+        <TextBannerSection
+          title={promoBanner?.title || 'Designed for the Modern Woman'}
+          description={promoBanner?.subtitle || 'Every piece is thoughtfully curated from your live catalog to blend timeless elegance with contemporary comfort.'}
+          ctaLabel={promoBanner?.ctaText || 'Learn Our Story'}
+          ctaHref={promoBanner?.ctaLink || promoBanner?.link || '/about'}
+          backgroundColor="from-pink-100 via-rose-50 to-pink-50"
+        />
 
-      {/* Brand Story / Promo Section */}
-      <section className="py-24 bg-background">
-        <div className="container mx-auto px-4 text-center max-w-3xl">
-          <h2 className="font-heading text-4xl font-bold mb-6">Designed for the Modern Woman</h2>
-          <p className="text-lg text-muted-foreground leading-relaxed mb-8">
-            At Luxe, we believe in fashion that empowers. Every piece in our collection is thoughtfully curated to blend timeless elegance with contemporary comfort. We source the finest materials to ensure you look and feel your absolute best.
-          </p>
-          <img src="/signature.png" alt="Signature" className="mx-auto h-12 opacity-50 hidden" /> {/* Placeholder for a signature */}
-        </div>
-      </section>
+        <TestimonialsSection />
+        <InstagramGallerySection />
+      </main>
     </div>
   );
 }

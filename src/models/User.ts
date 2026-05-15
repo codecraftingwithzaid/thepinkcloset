@@ -6,6 +6,7 @@ export interface IUser extends Document {
   password?: string;
   phone?: string;
   image?: string;
+  imagePath?: string; // Supabase storage path
   role: 'admin' | 'customer' | 'staff';
   status: 'active' | 'blocked' | 'suspended';
   addresses: {
@@ -43,6 +44,7 @@ const userSchema = new Schema<IUser>(
     password: { type: String },
     phone: { type: String },
     image: { type: String },
+    imagePath: { type: String }, // Supabase storage path
     role: { type: String, enum: ['admin', 'customer', 'staff'], default: 'customer' },
     status: { type: String, enum: ['active', 'blocked', 'suspended'], default: 'active' },
     addresses: [

@@ -4,7 +4,9 @@ export interface IBanner extends Document {
   title: string;
   subtitle?: string;
   image: string;
+  imagePath?: string; // Supabase storage path
   mobileImage?: string;
+  mobileImagePath?: string; // Supabase storage path
   link?: string;
   location: 'hero' | 'announcement' | 'sidebar' | 'footer' | 'category' | 'promo';
   ctaText?: string;
@@ -20,7 +22,9 @@ const BannerSchema: Schema = new Schema(
     title: { type: String, required: true },
     subtitle: { type: String },
     image: { type: String, required: true },
+    imagePath: { type: String }, // Supabase storage path
     mobileImage: { type: String },
+    mobileImagePath: { type: String }, // Supabase storage path
     link: { type: String },
     location: { type: String, enum: ['hero', 'announcement', 'sidebar', 'footer', 'category', 'promo'], required: true },
     ctaText: { type: String },

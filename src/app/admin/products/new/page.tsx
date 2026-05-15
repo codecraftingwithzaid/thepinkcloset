@@ -4,17 +4,20 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createProduct } from '@/actions/product';
 import { getCategories } from '@/actions/category';
+import { ImageUpload } from '@/components/admin/ImageUpload';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { ArrowLeft, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2 } from 'lucide-react';
 
 export default function NewProductPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [categories, setCategories] = useState([]);
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
+  const [imagePaths, setImagePaths] = useState<string[]>([]);
 
   useEffect(() => {
     async function fetchCats() {
@@ -29,6 +32,13 @@ export default function NewProductPage() {
     setIsLoading(true);
 
     const formData = new FormData(e.currentTarget);
+
+    // Add image URLs and paths to FormData
+    if (imageUrls.length > 0) {
+      formData.set('imageUrls', imageUrls.join(','));
+      formData.set('imagePaths', imagePaths.join(','));
+    }
+
     try {
       await createProduct(formData);
     } catch (error) {
@@ -37,6 +47,11 @@ export default function NewProductPage() {
       });
       setIsLoading(false);
     }
+  };
+
+  const handleImageUpload = (urls: string[], paths: string[]) => {
+    setImageUrls(urls);
+    setImagePaths(paths);
   };
 
   return (
@@ -127,14 +142,12 @@ export default function NewProductPage() {
               <CardDescription>Upload high-quality images.</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="aspect-square w-full rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center bg-muted/20 hover:bg-muted/50 transition-colors cursor-pointer">
-                <ImageIcon className="h-10 w-10 text-muted-foreground mb-4" />
-                <p className="text-sm font-medium text-foreground">Click to upload</p>
-                <p className="text-xs text-muted-foreground mt-1">SVG, PNG, JPG or GIF</p>
-              </div>
-              <p className="text-xs text-muted-foreground mt-4 italic">
-                * Note: Using dummy placeholder until Cloudinary is configured.
-              </p>
+              <ImageUpload
+                onUpload={handleImageUpload}
+                folder="products"
+                multiple={true}
+                maxFiles={10}
+              />
             </CardContent>
           </Card>
 
@@ -147,13 +160,16 @@ export default function NewProductPage() {
                 <span className="text-sm font-medium">Status</span>
                 <span className="text-sm text-green-600 bg-green-500/10 px-2.5 py-1 rounded-full font-semibold">Draft</span>
               </div>
-              <Button type="submit" className="w-full" disabled={isLoading}>
+              <Button type="submit" className="w-full" disabled={isLoading || imageUrls.length === 0}>
                 {isLoading ? (
                   <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</>
                 ) : (
                   'Publish Product'
                 )}
               </Button>
+              {imageUrls.length === 0 && (
+                <p className="text-xs text-muted-foreground">* Please upload at least one image</p>
+              )}
             </CardContent>
           </Card>
         </div>

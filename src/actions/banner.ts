@@ -3,6 +3,7 @@
 import connectToDatabase from '@/lib/db';
 import Banner from '@/models/Banner';
 import { revalidatePath } from 'next/cache';
+import { deleteImage, extractFilePathFromUrl } from '@/lib/storage';
 
 export async function getBanners() {
   try {
@@ -34,11 +35,19 @@ export async function createBanner(formData: FormData) {
   try {
     await connectToDatabase();
     
+    // Get image URLs and paths
+    const image = readString(formData, 'image');
+    const imagePath = readString(formData, 'imagePath') || undefined;
+    const mobileImage = readString(formData, 'mobileImage') || undefined;
+    const mobileImagePath = readString(formData, 'mobileImagePath') || undefined;
+    
     const newBanner = await Banner.create({
       title: readString(formData, 'title'),
       subtitle: readString(formData, 'subtitle') || undefined,
-      image: readString(formData, 'image'),
-      mobileImage: readString(formData, 'mobileImage') || undefined,
+      image,
+      imagePath,
+      mobileImage,
+      mobileImagePath,
       link: readString(formData, 'link') || undefined,
       location: readString(formData, 'location') as 'hero' | 'announcement' | 'sidebar' | 'footer' | 'category' | 'promo',
       ctaText: readString(formData, 'ctaText') || undefined,
@@ -58,6 +67,18 @@ export async function createBanner(formData: FormData) {
 export async function deleteBanner(id: string) {
   try {
     await connectToDatabase();
+    
+    // Get banner to retrieve image paths
+    const banner = await Banner.findById(id).lean();
+    
+    // Delete associated images
+    if (banner?.imagePath) {
+      await deleteImage(banner.imagePath);
+    }
+    if (banner?.mobileImagePath) {
+      await deleteImage(banner.mobileImagePath);
+    }
+    
     await Banner.findByIdAndDelete(id);
     revalidatePath('/admin/banners');
     revalidatePath('/');
@@ -71,13 +92,33 @@ export async function updateBanner(id: string, formData: FormData) {
   try {
     await connectToDatabase();
 
+    // Get current banner for old image paths
+    const currentBanner = await Banner.findById(id).lean();
+
+    const image = readString(formData, 'image');
+    const imagePath = readString(formData, 'imagePath') || undefined;
+    const mobileImage = readString(formData, 'mobileImage') || undefined;
+    const mobileImagePath = readString(formData, 'mobileImagePath') || undefined;
+
+    // Delete old image if it changed
+    if (imagePath && currentBanner?.imagePath && imagePath !== currentBanner.imagePath) {
+      await deleteImage(currentBanner.imagePath);
+    }
+
+    // Delete old mobile image if it changed
+    if (mobileImagePath && currentBanner?.mobileImagePath && mobileImagePath !== currentBanner.mobileImagePath) {
+      await deleteImage(currentBanner.mobileImagePath);
+    }
+
     const updated = await Banner.findByIdAndUpdate(
       id,
       {
         title: readString(formData, 'title'),
         subtitle: readString(formData, 'subtitle') || undefined,
-        image: readString(formData, 'image'),
-        mobileImage: readString(formData, 'mobileImage') || undefined,
+        image,
+        imagePath,
+        mobileImage,
+        mobileImagePath,
         link: readString(formData, 'link') || undefined,
         location: readString(formData, 'location') as 'hero' | 'announcement' | 'sidebar' | 'footer' | 'category' | 'promo',
         ctaText: readString(formData, 'ctaText') || undefined,

@@ -7,6 +7,7 @@ import '@/models/Category';
 import Product from '@/models/Product';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { deleteImage, extractFilePathFromUrl } from '@/lib/storage';
 
 export async function getProducts() {
   try {
@@ -39,6 +40,7 @@ export async function getProductById(id: string) {
 }
 
 export async function createProduct(formData: FormData) {
+  debugger;
   await connectToDatabase();
 
   const title = formData.get('title') as string;
@@ -49,10 +51,14 @@ export async function createProduct(formData: FormData) {
   const stock = Number(formData.get('stock'));
   const category = formData.get('category') as string;
 
-  // Real app would process images here and upload to Cloudinary
-  // For now, use placeholder
-  const images = ['https://via.placeholder.com/600x800?text=Luxury+Dress'];
+  // Get image URLs and paths from FormData (uploaded via API)
+  const imageUrls = (formData.get('imageUrls') as string)?.split(',').filter(Boolean) || [];
+  const imagePaths = (formData.get('imagePaths') as string)?.split(',').filter(Boolean) || [];
+
   const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+
+  // Use Supabase URLs or fallback to placeholder
+  const images = imageUrls.length > 0 ? imageUrls : ['https://via.placeholder.com/600x800?text=Luxury+Dress'];
 
   await Product.create({
     title,
@@ -64,6 +70,7 @@ export async function createProduct(formData: FormData) {
     stock,
     category,
     images,
+    imagePaths: imagePaths.length > 0 ? imagePaths : undefined,
     isActive: true,
   });
 
@@ -72,8 +79,20 @@ export async function createProduct(formData: FormData) {
 }
 
 export async function deleteProduct(id: string) {
+  debugger;
   try {
     await connectToDatabase();
+    
+    // Get product to retrieve image paths
+    const product = await Product.findById(id).lean();
+    
+    // Delete all associated images from Supabase
+    if (product?.imagePaths && product.imagePaths.length > 0) {
+      for (const imagePath of product.imagePaths) {
+        await deleteImage(imagePath);
+      }
+    }
+    
     await Product.findByIdAndDelete(id);
     revalidatePath('/admin/products');
     return { success: true };
@@ -119,6 +138,20 @@ export async function updateProductFromFormData(id: string, formData: FormData) 
     const stock = Number(formData.get('stock'));
     const category = formData.get('category') as string;
 
+    // Get image URLs and paths from FormData
+    const imageUrls = (formData.get('imageUrls') as string)?.split(',').filter(Boolean) || [];
+    const imagePaths = (formData.get('imagePaths') as string)?.split(',').filter(Boolean) || [];
+    
+    // Get old image paths for deletion
+    const oldImagePaths = (formData.get('oldImagePaths') as string)?.split(',').filter(Boolean) || [];
+
+    // Delete old images that were removed
+    for (const oldPath of oldImagePaths) {
+      if (!imagePaths.includes(oldPath)) {
+        await deleteImage(extractFilePathFromUrl(oldPath));
+      }
+    }
+
     const updateData: any = {
       title,
       description,
@@ -128,6 +161,12 @@ export async function updateProductFromFormData(id: string, formData: FormData) 
       stock,
       category,
     };
+
+    // Update images if new ones were uploaded
+    if (imageUrls.length > 0) {
+      updateData.images = imageUrls;
+      updateData.imagePaths = imagePaths.length > 0 ? imagePaths : undefined;
+    }
 
     await Product.findByIdAndUpdate(id, updateData, { new: true });
     revalidatePath('/admin/products');

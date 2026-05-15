@@ -240,11 +240,10 @@ export default function EmailTemplateClient() {
                   <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{template.subject}</p>
                 </div>
                 <span
-                  className={`text-xs px-2 py-1 rounded ${
-                    template.status === 'active'
+                  className={`text-xs px-2 py-1 rounded ${template.status === 'active'
                       ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
                       : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                  }`}
+                    }`}
                 >
                   {template.status}
                 </span>

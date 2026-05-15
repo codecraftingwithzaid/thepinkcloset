@@ -1,20 +1,9 @@
 import type { Metadata } from 'next';
-import { Inter, Playfair_Display } from 'next/font/google';
 import './globals.css';
 import { Toaster } from '@/components/ui/sonner';
 import { ThemeProvider } from '@/components/theme-provider';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { RootLayoutClient } from './RootLayoutClient';
-
-const inter = Inter({
-  subsets: ['latin'],
-  variable: '--font-sans',
-});
-
-const playfair = Playfair_Display({
-  subsets: ['latin'],
-  variable: '--font-heading',
-});
 
 export const metadata: Metadata = {
   title: {
@@ -35,7 +24,7 @@ export default function RootLayout({
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </head>
-      <body className={`${inter.variable} ${playfair.variable} min-h-screen flex flex-col font-sans bg-background text-foreground antialiased selection:bg-primary/20 selection:text-primary`}>
+      <body className="min-h-screen flex flex-col font-sans bg-background text-foreground antialiased selection:bg-primary/20 selection:text-primary">
         <ThemeProvider>
           <TooltipProvider>
             <RootLayoutClient>

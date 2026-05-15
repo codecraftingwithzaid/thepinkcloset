@@ -5,8 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Heart, Share2, Ruler, ShieldCheck } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
-export default async function ProductDetailsPage({ params }: { params: { slug: string } }) {
-  const product = await getProductBySlug(params.slug);
+export default async function ProductDetailsPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const product = await getProductBySlug(slug);
 
   if (!product) {
     notFound();
@@ -23,9 +24,9 @@ export default async function ProductDetailsPage({ params }: { params: { slug: s
         {/* Image Gallery */}
         <div className="space-y-4">
           <div className="aspect-[3/4] overflow-hidden rounded-2xl bg-muted/20">
-            <img 
-              src={product.images?.[0] || 'https://via.placeholder.com/800x1200?text=Luxury+Fashion'} 
-              alt={product.title} 
+            <img
+              src={product.images?.[0] || 'https://via.placeholder.com/800x1200?text=Luxury+Fashion'}
+              alt={product.title}
               className="w-full h-full object-cover"
             />
           </div>
@@ -45,7 +46,7 @@ export default async function ProductDetailsPage({ params }: { params: { slug: s
         <div className="flex flex-col pt-4">
           <h1 className="font-heading text-4xl md:text-5xl font-bold mb-4">{product.title}</h1>
           <div className="text-2xl font-medium mb-6">${product.price.toFixed(2)}</div>
-          
+
           <p className="text-muted-foreground text-lg mb-8 leading-relaxed">
             {product.shortDescription}
           </p>
@@ -95,7 +96,7 @@ export default async function ProductDetailsPage({ params }: { params: { slug: s
               <span>Premium Quality</span>
             </div>
             <div className="flex items-center gap-3 text-sm text-muted-foreground">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 text-primary"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 text-primary"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>
               <span>Free Worldwide Shipping</span>
             </div>
           </div>

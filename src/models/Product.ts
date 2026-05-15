@@ -6,6 +6,7 @@ export interface IProduct extends Document {
   description: string;
   shortDescription: string;
   images: string[];
+  imagePaths?: string[]; // Store Supabase storage paths for deletion
   category: mongoose.Types.ObjectId;
   subcategory?: string;
   brand?: string;
@@ -32,6 +33,7 @@ const productSchema = new Schema<IProduct>(
     description: { type: String, required: true },
     shortDescription: { type: String, required: true },
     images: [{ type: String }],
+    imagePaths: [{ type: String }], // Supabase storage paths
     category: { type: Schema.Types.ObjectId, ref: 'Category', required: true },
     subcategory: { type: String },
     brand: { type: String },

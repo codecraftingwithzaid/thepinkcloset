@@ -5,11 +5,20 @@ import connectToDatabase from '@/lib/db';
 import EmailCampaign from '@/models/EmailCampaign';
 import Subscriber from '@/models/Subscriber';
 import User from '@/models/User';
-import { sendMail, sendBulk } from '@/lib/email';
 import { auth } from '@/auth';
 import { Types } from 'mongoose';
 import { emailQueue } from '@/lib/emailQueue';
 import { serializeData } from '@/lib/serialize';
+
+interface CampaignAudience {
+  type: 'all_subscribers' | 'all_customers' | 'selected';
+  emails?: { email: string; id?: string }[];
+}
+
+interface CampaignAudience {
+  type: 'all_subscribers' | 'all_customers' | 'selected';
+  emails?: { email: string; id?: string }[];
+}
 
 async function requireAdmin() {
   const session = await auth();
@@ -23,7 +32,7 @@ export async function createCampaign(data: {
   name: string;
   subject: string;
   templateId?: string;
-  audience?: any;
+  audience?: Partial<CampaignAudience>;
   html?: string;
   text?: string;
 }) {
@@ -52,8 +61,8 @@ export async function createCampaign(data: {
 
     revalidatePath('/admin/marketing/campaigns');
     return { ok: true, campaign: serializeData(campaign) };
-  } catch (err: any) {
-    return { ok: false, error: err?.message };
+  } catch (err: unknown) {
+    return { ok: false, error: (err as Error)?.message };
   }
 }
 
@@ -63,14 +72,13 @@ export async function updateCampaign(
     name: string;
     subject: string;
     templateId: string;
-    audience: any;
+    audience: Partial<CampaignAudience>;
     html: string;
     text: string;
     scheduleAt: Date;
   }>
 ) {
   try {
-    const session = await requireAdmin();
 
     if (!Types.ObjectId.isValid(id)) {
       throw new Error('Invalid campaign ID');
@@ -91,14 +99,13 @@ export async function updateCampaign(
 
     revalidatePath('/admin/marketing/campaigns');
     return { ok: true, campaign: serializeData(campaign) };
-  } catch (err: any) {
-    return { ok: false, error: err?.message };
+  } catch (err: unknown) {
+    return { ok: false, error: (err as Error)?.message };
   }
 }
 
 export async function deleteCampaign(id: string) {
   try {
-    const session = await requireAdmin();
 
     if (!Types.ObjectId.isValid(id)) {
       throw new Error('Invalid campaign ID');
@@ -112,14 +119,13 @@ export async function deleteCampaign(id: string) {
 
     revalidatePath('/admin/marketing/campaigns');
     return { ok: true };
-  } catch (err: any) {
-    return { ok: false, error: err?.message };
+  } catch (err: unknown) {
+    return { ok: false, error: (err as Error)?.message };
   }
 }
 
 export async function scheduleCampaign(id: string, scheduleAt: Date) {
   try {
-    const session = await requireAdmin();
 
     if (!Types.ObjectId.isValid(id)) {
       throw new Error('Invalid campaign ID');
@@ -141,12 +147,12 @@ export async function scheduleCampaign(id: string, scheduleAt: Date) {
 
     revalidatePath('/admin/marketing/campaigns');
     return { ok: true, campaign };
-  } catch (err: any) {
-    return { ok: false, error: err?.message };
+  } catch (err: unknown) {
+    return { ok: false, error: (err as Error)?.message };
   }
 }
 
-async function getAudienceEmails(audience: any) {
+async function getAudienceEmails(audience: Partial<CampaignAudience>) {
   const recipients: { email: string; id?: string }[] = [];
 
   if (audience.type === 'all_subscribers') {
@@ -156,7 +162,7 @@ async function getAudienceEmails(audience: any) {
     const customers = await User.find({ role: 'customer' }).lean();
     recipients.push(...customers.map(c => ({ email: c.email, id: c._id.toString() })));
   } else if (audience.type === 'selected' && audience.emails) {
-    recipients.push(...audience.emails);
+    recipients.push(...(audience.emails as { email: string; id?: string }[]));
   }
 
   return recipients;
@@ -164,8 +170,6 @@ async function getAudienceEmails(audience: any) {
 
 export async function sendCampaign(id: string, sendNow: boolean = true) {
   try {
-    const session = await requireAdmin();
-
     if (!Types.ObjectId.isValid(id)) {
       throw new Error('Invalid campaign ID');
     }
@@ -212,15 +216,13 @@ export async function sendCampaign(id: string, sendNow: boolean = true) {
 
     revalidatePath('/admin/marketing/campaigns');
     return { ok: true, campaign: serializeData(campaign), message: 'Campaign emails queued for sending' };
-  } catch (err: any) {
-    return { ok: false, error: err?.message };
+  } catch (err: unknown) {
+    return { ok: false, error: (err as Error)?.message };
   }
 }
 
 export async function getCampaigns() {
   try {
-    const session = await requireAdmin();
-
     await connectToDatabase();
     const campaigns = await EmailCampaign.find()
       .populate('template', 'name')
@@ -228,15 +230,13 @@ export async function getCampaigns() {
       .lean();
 
     return { ok: true, campaigns: serializeData(campaigns) };
-  } catch (err: any) {
-    return { ok: false, error: err?.message, campaigns: [] };
+  } catch (err: unknown) {
+    return { ok: false, error: (err as Error)?.message, campaigns: [] };
   }
 }
 
 export async function getCampaign(id: string) {
   try {
-    const session = await requireAdmin();
-
     if (!Types.ObjectId.isValid(id)) {
       throw new Error('Invalid campaign ID');
     }
@@ -248,7 +248,7 @@ export async function getCampaign(id: string) {
     }
 
     return { ok: true, campaign: serializeData(campaign) };
-  } catch (err: any) {
-    return { ok: false, error: err?.message };
+  } catch (err: unknown) {
+    return { ok: false, error: (err as Error)?.message };
   }
 }

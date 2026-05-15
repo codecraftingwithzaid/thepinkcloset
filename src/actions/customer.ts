@@ -3,6 +3,7 @@
 import connectToDatabase from '@/lib/db';
 import User from '@/models/User';
 import { revalidatePath } from 'next/cache';
+import { deleteImage, extractFilePathFromUrl } from '@/lib/storage';
 
 export async function getCustomers(
   page: number = 1,
@@ -114,13 +115,22 @@ export async function updateCustomer(id: string, data: any) {
   try {
     await connectToDatabase();
 
-    const { name, email, phone, image, addresses } = data;
+    const { name, email, phone, image, imagePath, addresses } = data;
+
+    // Get current customer for old image path
+    const currentCustomer = await User.findById(id).lean();
+
+    // Delete old image if a new one is provided
+    if (imagePath && currentCustomer?.imagePath && imagePath !== currentCustomer.imagePath) {
+      await deleteImage(currentCustomer.imagePath);
+    }
 
     const updateData: any = {};
     if (name) updateData.name = name;
     if (email) updateData.email = email;
     if (phone) updateData.phone = phone;
     if (image) updateData.image = image;
+    if (imagePath) updateData.imagePath = imagePath;
     if (addresses) updateData.addresses = addresses;
 
     await User.findByIdAndUpdate(id, updateData, { new: true });
@@ -137,6 +147,14 @@ export async function updateCustomer(id: string, data: any) {
 export async function deleteCustomer(id: string) {
   try {
     await connectToDatabase();
+
+    // Get customer to retrieve image path
+    const customer = await User.findById(id).lean();
+    
+    // Delete profile image if it exists
+    if (customer?.imagePath) {
+      await deleteImage(customer.imagePath);
+    }
 
     await User.findByIdAndDelete(id);
     revalidatePath('/admin/customers');
